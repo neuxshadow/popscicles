@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@openzeppelin/merkle-tree": "^1.0.8",
     "@supabase/supabase-js": "^2.97.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
