@@ -13,16 +13,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    if (!isValidEthereumAddress(wallet_address)) {
-      return NextResponse.json({ error: "Invalid Ethereum address" }, { status: 400 });
+    const tUsername = twitter_username.trim().startsWith('@') ? twitter_username.trim() : `@${twitter_username.trim()}`;
+    const wAddress = wallet_address.trim().startsWith('0x') ? wallet_address.trim().toLowerCase() : `0x${wallet_address.trim()}`.toLowerCase();
+
+    if (!isValidEthereumAddress(wAddress)) {
+      return NextResponse.json({ error: "Invalid Ethereum address format" }, { status: 400 });
     }
 
     if (!isValidTwitterUrl(tweet_url)) {
       return NextResponse.json({ error: "Invalid Tweet URL" }, { status: 400 });
     }
-
-    const tUsername = twitter_username.startsWith('@') ? twitter_username : `@${twitter_username}`;
-    const wAddress = wallet_address.toLowerCase();
 
     // 2. Check for duplicates using the public client (requires no select policy OR a restricted one)
     // Actually, per "Do NOT enable any public SELECT policy", this check might fail if SELECT is disabled.

@@ -6,14 +6,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Twitter, Wallet, Link as LinkIcon, Loader2, CheckCircle2, AlertCircle, ChevronRight, ArrowLeft } from "lucide-react";
-import { cn, isValidEthereumAddress, isValidTwitterUrl } from "@/lib/utils";
+import { cn, isValidEthereumAddress, isValidTwitterUrl, normalizeEthereumAddress } from "@/lib/utils";
 import { Navigation } from "@/components/Navigation";
 import Link from "next/link";
 
 const formSchema = z.object({
-  twitter_username: z.string().min(1, "Twitter username is required").transform(val => val.startsWith('@') ? val : `@${val}`),
-  wallet_address: z.string().refine(isValidEthereumAddress, { message: "Invalid Ethereum address format" }),
-  tweet_url: z.string().refine(isValidTwitterUrl, { message: "Invalid Tweet URL (must be from x.com or twitter.com)" }),
+  twitter_username: z.string().min(1, "Twitter username is required").transform(val => val.trim().startsWith('@') ? val.trim() : `@${val.trim()}`),
+  wallet_address: z.string()
+    .transform(val => normalizeEthereumAddress(val))
+    .refine(isValidEthereumAddress, { message: "Invalid Ethereum address format (requires 42 characters starting with 0x)" }),
+  tweet_url: z.string().trim().refine(isValidTwitterUrl, { message: "Invalid Tweet URL (must be from x.com or twitter.com)" }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -25,6 +27,7 @@ export default function QuestsPage() {
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    mode: "onBlur",
   });
 
   const onSubmit = async (data: FormData) => {
