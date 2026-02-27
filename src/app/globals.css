@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Design Tokens Mapping */
+  --color-primary: #7dd3fc;
+  --color-primary-foreground: #0a0a0a;
+  
+  --color-border: #1a1a1a;
+  --color-input: #0d0d0d;
+  
+  --color-muted: #64748b;
+  --color-muted-foreground: #94a3b8;
+  
+  --radius-product: 10px;
+
+  /* Prismatic Gradient */
+  --gradient-prismatic: linear-gradient(135deg, rgba(125, 211, 252, 0.45) 0%, rgba(167, 139, 250, 0.25) 50%, rgba(125, 211, 252, 0.1) 100%);
+}
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ffffff;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Inter, system-ui, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
+}
+
+@layer utilities {
+  .product-card {
+    @apply rounded-[--radius-product] bg-[#0d0d0d] border border-white/5 transition-all relative overflow-hidden;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .product-card::before {
+    content: '';
+    @apply absolute inset-0 rounded-[--radius-product] pointer-events-none opacity-0 transition-opacity duration-500;
+    padding: 1px;
+    background: var(--gradient-prismatic);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .product-card:hover::before {
+    @apply opacity-100;
+  }
+
+  .surface-subtle {
+    @apply bg-[#080808] border border-white/5 rounded-[--radius-product];
+  }
+  
+  .product-input {
+    @apply w-full bg-[#0d0d0d]/50 backdrop-blur-sm border border-[#1a1a1a] rounded-[--radius-product] px-4 py-3 
+           outline-none transition-all placeholder:text-slate-600
+           focus:border-sky-400/50 focus:ring-1 focus:ring-sky-400/10 text-sm;
+  }
+  
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-[--radius-product] 
+           bg-sky-400 hover:bg-sky-300 text-sky-950 font-bold transition-all
+           hover:shadow-[0_0_25px_rgba(125,211,252,0.3)]
+           active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none text-sm relative;
+  }
+  
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-[--radius-product] 
+           bg-transparent border border-white/10 hover:border-sky-400/30 hover:bg-sky-400/5 
+           text-white font-semibold transition-all
+           active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none text-sm;
+  }
+
+  .nav-link {
+    @apply text-slate-500 hover:text-sky-400 transition-colors text-sm font-semibold tracking-tight;
+  }
+
+  .section-label {
+    @apply text-[10px] uppercase tracking-[0.2em] font-black text-sky-400/80 mb-4 block;
+  }
+
+  /* Typography Polish */
+  .display-title {
+    @apply text-6xl md:text-8xl font-bold tracking-[-0.04em] leading-[0.95];
+  }
+
+  .text-icy-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-sky-400/40;
+  }
+
+  .page-container {
+    @apply max-w-6xl mx-auto px-6 w-full;
+  }
+
+  /* Icy Reflection & Grids */
+  .bg-grid-icy {
+    background-image: linear-gradient(to right, rgba(125, 211, 252, 0.03) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(125, 211, 252, 0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .icy-reflection {
+    @apply absolute inset-0 pointer-events-none;
+    background: radial-gradient(circle at 50% 50%, rgba(125, 211, 252, 0.05) 0%, transparent 70%);
+    filter: blur(60px);
+  }
+}
+
+* {
+  @apply border-[#1a1a1a] selection:bg-sky-400/30;
+}
