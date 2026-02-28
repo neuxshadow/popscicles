@@ -6,11 +6,12 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (authError || !authData.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const user = authData.user;
 
     // Check if the user is an admin
     const { data: adminUser, error: adminError } = await supabase
@@ -35,7 +36,10 @@ export async function GET() {
       rejected: rejected || 0
     });
   } catch (err: any) {
-    console.error("Admin Stats API Error:", err);
+    if (err.message === 'Supabase configuration missing') {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    console.error("Admin Stats API Error:", err.message);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

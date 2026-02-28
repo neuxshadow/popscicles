@@ -53,3 +53,19 @@ export function isValidTwitterUrl(url: string) {
     return false;
   }
 }
+export function csvEscape(value: any): string {
+  if (value === null || value === undefined) return "";
+  let str = String(value).trim();
+
+  // CSV Injection Protection: prefix with ' if starts with special characters
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
+
+  // Escape quotes and wrap in quotes if contains comma, quote, or newline
+  if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+
+  return str;
+}

@@ -2,13 +2,36 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { isValidEthereumAddress, isValidTwitterUrl, isValidTwitterHandle, normalizeEthereumAddress } from '@/lib/utils';
 import { headers } from 'next/headers';
+import { getRateLimiter, getClientIP } from '@/lib/ratelimit';
+import { createHash } from 'crypto';
+
+/**
+ * Rate limit: 10 submissions per 10 minutes per IP
+ */
+const submitLimiter = getRateLimiter(10, "600 s");
 
 export async function POST(req: Request) {
+  const ip = getClientIP(req);
+
   try {
+    // 1. Body size guard (Early reject for large payloads > 5KB)
+    const contentLength = parseInt(req.headers.get('content-length') || '0');
+    if (contentLength > 5120) {
+      return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+    }
+
+    // 2. Rate Limiting
+    if (submitLimiter) {
+      const { success } = await submitLimiter.limit(`submit_ip_${ip}`);
+      if (!success) {
+        return NextResponse.json({ error: "Too Many Requests. Please wait 10 minutes." }, { status: 429 });
+      }
+    }
+
     const body = await req.json();
     const { twitter_username, wallet_address, tweet_url } = body;
 
-    // 1. Server-side validation
+    // 3. Server-side validation
     if (!twitter_username || !wallet_address || !tweet_url) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
@@ -28,22 +51,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid Tweet URL" }, { status: 400 });
     }
 
-    // 2. Check for duplicates using the public client (requires no select policy OR a restricted one)
-    // Actually, per "Do NOT enable any public SELECT policy", this check might fail if SELECT is disabled.
-    // However, for duplicate checks during INSERT, we can either:
-    // a. Rely on DB unique constraints (twitter_username, wallet_address are UNIQUE)
-    // b. Use a RPC or restricted SELECT.
-    // Given the constraints, let's rely on the DB unique constraint and handle the error.
+    // 4. Secure IP Anonymization (Salted SHA-256)
+    const salt = process.env.IP_HASH_SALT || 'dev_salt_replace_in_prod';
+    const ipHash = createHash('sha256').update(ip + salt).digest('hex');
 
-    // 3. Get IP for metadata (with simple anonymization/hashing)
     const headerList = await headers();
-    const forwarded = headerList.get('x-forwarded-for');
-    const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
     
-    // Simple hash for the IP to avoid storing raw data
-    const ipHash = ip === 'unknown' ? 'unknown' : Buffer.from(ip).toString('base64').slice(0, 16);
-
-    // 4. Insert submission using server client
+    // 5. Insert submission using server client
     const supabase = await createClient();
     const { error: insertError } = await supabase
       .from('submissions')
@@ -53,7 +67,7 @@ export async function POST(req: Request) {
         tweet_url: tweet_url,
         status: 'pending',
         ip_hash: ipHash,
-        user_agent: headerList.get('user-agent')
+        user_agent: headerList.get('user-agent')?.slice(0, 255) // Truncate long User-Agents
       }]);
 
     if (insertError) {
@@ -65,7 +79,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error("Submission API Error:", err);
+    console.error("Submission API Error:", err.message);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

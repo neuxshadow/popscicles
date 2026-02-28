@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { csvEscape } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (authError || !authData.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const user = authData.user;
 
     // Check if the user is an admin
     const { data: adminUser, error: adminError } = await supabase
@@ -35,24 +37,34 @@ export async function GET(req: Request) {
       return new Response("No approved wallets found", { status: 404 });
     }
 
-    // Convert to CSV
+    // Headers
+    const headers = ["Wallet", "Twitter", "Date"].map(csvEscape);
+    
+    // Rows
+    const rows = data.map(row => [
+      csvEscape(row.wallet_address),
+      csvEscape(row.twitter_username),
+      csvEscape(new Date(row.created_at).toISOString())
+    ]);
+
+    // Construct CSV content securely
     const csvContent = [
-      ["Wallet", "Twitter", "Date"],
-      ...data.map(row => [
-        row.wallet_address,
-        row.twitter_username,
-        new Date(row.created_at).toLocaleDateString()
-      ])
-    ].map(e => e.join(",")).join("\n");
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
 
     return new Response(csvContent, {
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="approved_wallets_${new Date().toISOString().split('T')[0]}.csv"`
+        'Content-Disposition': `attachment; filename="approved_wallets_${new Date().toISOString().split('T')[0]}.csv"`,
+        'Cache-Control': 'no-store, max-age=0'
       }
     });
   } catch (err: any) {
-    console.error("Export API Error:", err);
+    if (err.message === 'Supabase configuration missing') {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    console.error("Export API Error:", err.message);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

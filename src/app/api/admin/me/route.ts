@@ -6,12 +6,13 @@ export async function GET() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    // Reduce data exposure: do NOT return user email to client.
     return NextResponse.json({
       hasUser: !!user,
-      userId: user?.id || null,
-      email: user?.email || null
+      userId: user?.id || null
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error("Session Check Error:", err.message);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
