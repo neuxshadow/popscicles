@@ -63,7 +63,9 @@ export default function AdminDashboard() {
       
       if (sess.hasUser) {
         setIsAuthenticated(true);
-        await checkAdmin(sess.userId);
+        // Authoritative check: try to fetch data. 
+        // 200 = Admin, 403 = Not Admin, 401 = Session expired
+        await fetchData();
       } else {
         setIsAuthenticated(false);
         setIsAdmin(false);
@@ -72,26 +74,6 @@ export default function AdminDashboard() {
     } catch (err) {
       setIsAuthenticated(false);
       setIsAdmin(false);
-      setIsLoading(false);
-    }
-  }
-
-  async function checkAdmin(userId: string) {
-    try {
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('id')
-        .eq('id', userId)
-        .single();
-      
-      if (error || !data) {
-        setIsAdmin(false);
-      } else {
-        setIsAdmin(true);
-      }
-    } catch (err) {
-      setIsAdmin(false);
-    } finally {
       setIsLoading(false);
     }
   }
@@ -152,12 +134,28 @@ export default function AdminDashboard() {
       // 1. Fetch the submissions list
       const listRes = await fetch(`/api/admin/list?filter=${filter}&search=${search}&page=${page}&pageSize=${pageSize}`, { cache: 'no-store' });
       
-      if (!listRes.ok) {
-        const err = await listRes.json();
-        console.error("List Fetch Error:", err.error);
+      if (listRes.status === 401) {
+        setIsAuthenticated(false);
+        setIsAdmin(false);
         setIsLoading(false);
         return;
       }
+
+      if (listRes.status === 403) {
+        setIsAdmin(false);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!listRes.ok) {
+        console.error("List Fetch Error:", listRes.status);
+        setIsLoading(false);
+        return;
+      }
+
+      // If we reach here, we are authenticated and an admin
+      setIsAuthenticated(true);
+      setIsAdmin(true);
 
       const res = await listRes.json();
       
@@ -166,9 +164,7 @@ export default function AdminDashboard() {
       setSubmissions(rows);
       setTotalPages(res.totalPages || 1);
 
-      // 3. Set stats counters from res.count or compute from res.submissions by status
-      // We prioritize showing the counts accurately for the current filter if appropriate,
-      // but also try to fetch global stats if available.
+      // 3. Set stats counters
       setStats({
         total: res.count || rows.length,
         pending: rows.filter((s: Submission) => s.status === 'pending').length,
@@ -176,7 +172,7 @@ export default function AdminDashboard() {
         rejected: rows.filter((s: Submission) => s.status === 'rejected').length
       });
 
-      // 4. Attempt to get global stats for a more complete dashboard
+      // 4. Fetch global stats
       const statsRes = await fetch('/api/admin/stats', { cache: 'no-store' });
       if (statsRes.ok) {
         const statsData = await statsRes.json();
