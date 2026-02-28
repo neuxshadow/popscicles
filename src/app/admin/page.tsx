@@ -47,19 +47,7 @@ export default function AdminDashboard() {
   const pageSize = 10;
 
   useEffect(() => {
-    checkUser();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      if (session) {
-        setIsAuthenticated(true);
-        checkAdmin(session.user.id);
-      } else {
-        setIsAuthenticated(false);
-        setIsAdmin(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    refreshSession();
   }, []);
 
   useEffect(() => {
@@ -68,13 +56,22 @@ export default function AdminDashboard() {
     }
   }, [isAuthenticated, isAdmin, filter, page, search]);
 
-  async function checkUser() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      setIsAuthenticated(true);
-      checkAdmin(session.user.id);
-    } else {
+  async function refreshSession() {
+    try {
+      const res = await fetch('/api/admin/me', { cache: 'no-store' });
+      const sess = await res.json();
+      
+      if (sess.hasUser) {
+        setIsAuthenticated(true);
+        await checkAdmin(sess.userId);
+      } else {
+        setIsAuthenticated(false);
+        setIsAdmin(false);
+        setIsLoading(false);
+      }
+    } catch (err) {
       setIsAuthenticated(false);
+      setIsAdmin(false);
       setIsLoading(false);
     }
   }
@@ -118,7 +115,7 @@ export default function AdminDashboard() {
       if (response.ok) {
         console.log("Server Login Success:", result.user?.email);
         router.refresh();
-        await checkUser();
+        await refreshSession();
       } else {
         setLoginError(result.error || "Login failed");
       }
@@ -135,7 +132,12 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       await supabase.auth.signOut();
-      router.replace('/admin'); // Redirect back to login state
+      
+      // Explicit state reset
+      setIsAuthenticated(false);
+      setIsAdmin(false);
+      
+      router.replace('/admin');
       router.refresh();
     } catch (err) {
       console.error("Logout Error:", err);
