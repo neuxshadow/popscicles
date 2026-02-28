@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { isValidEthereumAddress, isValidTwitterUrl } from '@/lib/utils';
+import { isValidEthereumAddress, isValidTwitterUrl, isValidTwitterHandle, normalizeEthereumAddress } from '@/lib/utils';
 import { headers } from 'next/headers';
 
 export async function POST(req: Request) {
@@ -14,10 +14,14 @@ export async function POST(req: Request) {
     }
 
     const tUsername = twitter_username.trim().startsWith('@') ? twitter_username.trim() : `@${twitter_username.trim()}`;
-    const wAddress = wallet_address.trim().startsWith('0x') ? wallet_address.trim().toLowerCase() : `0x${wallet_address.trim()}`.toLowerCase();
+    const wAddress = normalizeEthereumAddress(wallet_address);
 
     if (!isValidEthereumAddress(wAddress)) {
       return NextResponse.json({ error: "Invalid Ethereum address format" }, { status: 400 });
+    }
+
+    if (!isValidTwitterHandle(tUsername)) {
+      return NextResponse.json({ error: "Invalid Twitter handle format" }, { status: 400 });
     }
 
     if (!isValidTwitterUrl(tweet_url)) {

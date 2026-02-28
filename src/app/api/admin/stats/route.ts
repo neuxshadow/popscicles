@@ -1,20 +1,30 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
-import { headers } from 'next/headers';
+import { createClient } from '@/lib/supabase-server';
 
 export async function GET() {
   try {
-    const headerList = await headers();
-    const password = headerList.get('x-admin-password');
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (password !== process.env.ADMIN_PASSWORD) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { count: total } = await supabaseAdmin.from('submissions').select('*', { count: 'exact', head: true });
-    const { count: pending } = await supabaseAdmin.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-    const { count: approved } = await supabaseAdmin.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'approved');
-    const { count: rejected } = await supabaseAdmin.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
+    // Check if the user is an admin
+    const { data: adminUser, error: adminError } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (adminError || !adminUser) {
+      return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+    }
+
+    const { count: total } = await supabase.from('submissions').select('*', { count: 'exact', head: true });
+    const { count: pending } = await supabase.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+    const { count: approved } = await supabase.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'approved');
+    const { count: rejected } = await supabase.from('submissions').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
 
     return NextResponse.json({
       total: total || 0,

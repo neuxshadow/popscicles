@@ -1,14 +1,24 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
-import { headers } from 'next/headers';
+import { createClient } from '@/lib/supabase-server';
 
 export async function POST(req: Request) {
   try {
-    const headerList = await headers();
-    const password = headerList.get('x-admin-password');
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (password !== process.env.ADMIN_PASSWORD) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check if the user is an admin
+    const { data: adminUser, error: adminError } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (adminError || !adminUser) {
+      return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
     }
 
     const { id, status, admin_note } = await req.json();
@@ -17,7 +27,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('submissions')
       .update({ status, admin_note })
       .eq('id', id);

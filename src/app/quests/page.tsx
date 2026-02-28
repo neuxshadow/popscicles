@@ -67,15 +67,18 @@ export default function QuestsPage() {
           <div className="mx-auto h-16 w-16 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
             <CheckCircle2 className="h-10 w-10" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-4">
             <h2 className="text-3xl font-bold tracking-tight">Entry Received</h2>
             <p className="text-neutral-400 font-medium">
-              Your application is now under manual review. This typically takes up to 48 hours.
+              Your application has been logged for manual review. <br />
+              <span className="text-xs text-neutral-500 italic mt-2 block">
+                Intake is boutique and intentional. We will verify your credentials against our core parameters.
+              </span>
             </p>
           </div>
-          <Link href="/status" className="btn-primary w-full space-x-2">
-            <span>Check Status</span>
-            <ChevronRight className="h-4 w-4" />
+          <Link href="/" className="btn-secondary w-full space-x-2">
+            <ArrowLeft className="h-4 w-4" />
+            <span>Return Home</span>
           </Link>
         </motion.div>
       </div>

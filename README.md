@@ -33,4 +33,36 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Admin Setup (Supabase Auth)
+
+This project uses Supabase Auth for the admin dashboard. To set up the first admin:
+
+1. **Authentication**:
+   - Go to your Supabase Project -> Authentication.
+   - Create a new user with email and password.
+   - Copy the User's **ID** (UUID).
+
+2. **Grant Admin Role**:
+   - Go to your Supabase Project -> SQL Editor.
+   - Run the following SQL to grant admin access (replace `YOUR_USER_ID` with the ID from step 1):
+     ```sql
+     INSERT INTO admin_users (id) VALUES ('YOUR_USER_ID');
+     ```
+
+3. **Access Dashboard**:
+   - Navigate to `/admin` on your local or deployed site.
+   - Log in with the email and password you created.
+
+## Validation Rules
+
+The following validation rules are enforced for submissions:
+
+- **EVM Wallet**: Valid Ethereum address format (vía `viem`).
+- **Twitter Handle**: 1-15 characters, alphanumeric + underscores.
+- **Tweet URL**: Must be a valid `x.com` or `twitter.com` status URL with a numeric ID.
+
+## Security & RLS
+
+- `submissions`: Public `INSERT` only. `SELECT`, `UPDATE`, `DELETE` restricted to `admin_users`.
+- `admin_users`: Restricted to authenticated users for role checks.
+- All admin API routes in `/api/admin/*` require a valid session and admin role.
