@@ -115,23 +115,17 @@ export default function AdminDashboard() {
 
       const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.error || "Login failed");
+      if (response.ok) {
+        console.log("Server Login Success:", result.user?.email);
+        router.refresh();
+        await checkUser();
+      } else {
+        setLoginError(result.error || "Login failed");
       }
 
-      console.log("Server Login Success:", result.user?.email);
-      
-      // Refresh the page to ensure server components and middleware see the new session cookies
-      router.refresh();
-      
-      // We don't necessarily need to call toggle states manually as router.refresh 
-      // and the useEffect checkUser/onAuthStateChange will handle it.
-      // But let's trigger a check.
-      await checkUser();
-
     } catch (err: any) {
-      console.error("Login Error:", err);
-      setLoginError(err.message || "Login failed");
+      console.error("Login Network Error:", err);
+      setLoginError("A network error occurred. Please check your connection.");
     } finally {
       setIsLoggingIn(false);
     }
@@ -153,19 +147,40 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch stats
+      // 1. Fetch the submissions list
+      const listRes = await fetch(`/api/admin/list?filter=${filter}&search=${search}&page=${page}&pageSize=${pageSize}`, { cache: 'no-store' });
+      
+      if (!listRes.ok) {
+        const err = await listRes.json();
+        console.error("List Fetch Error:", err.error);
+        setIsLoading(false);
+        return;
+      }
+
+      const res = await listRes.json();
+      
+      // 2. Set table rows = res.submissions
+      const rows = res.submissions || [];
+      setSubmissions(rows);
+      setTotalPages(res.totalPages || 1);
+
+      // 3. Set stats counters from res.count or compute from res.submissions by status
+      // We prioritize showing the counts accurately for the current filter if appropriate,
+      // but also try to fetch global stats if available.
+      setStats({
+        total: res.count || rows.length,
+        pending: rows.filter((s: Submission) => s.status === 'pending').length,
+        approved: rows.filter((s: Submission) => s.status === 'approved').length,
+        rejected: rows.filter((s: Submission) => s.status === 'rejected').length
+      });
+
+      // 4. Attempt to get global stats for a more complete dashboard
       const statsRes = await fetch('/api/admin/stats', { cache: 'no-store' });
       if (statsRes.ok) {
         const statsData = await statsRes.json();
-        setStats(statsData);
-      }
-
-      // Fetch list
-      const listRes = await fetch(`/api/admin/list?filter=${filter}&search=${search}&page=${page}&pageSize=${pageSize}`, { cache: 'no-store' });
-      if (listRes.ok) {
-        const listData = await listRes.json();
-        setSubmissions(listData.submissions || []);
-        setTotalPages(listData.totalPages || 1);
+        if (statsData && typeof statsData.total === 'number') {
+          setStats(statsData);
+        }
       }
     } catch (err) {
       console.error("Admin Data Fetch Error:", err);
