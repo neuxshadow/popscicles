@@ -119,14 +119,14 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       // Fetch stats
-      const statsRes = await fetch('/api/admin/stats');
+      const statsRes = await fetch('/api/admin/stats', { cache: 'no-store' });
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
       }
 
       // Fetch list
-      const listRes = await fetch(`/api/admin/list?filter=${filter}&search=${search}&page=${page}&pageSize=${pageSize}`);
+      const listRes = await fetch(`/api/admin/list?filter=${filter}&search=${search}&page=${page}&pageSize=${pageSize}`, { cache: 'no-store' });
       if (listRes.ok) {
         const listData = await listRes.json();
         setSubmissions(listData.submissions || []);

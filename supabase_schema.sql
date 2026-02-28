@@ -98,7 +98,7 @@ TO authenticated
 USING (id = auth.uid());
 
 -- 8) MINIMAL GRANTS (only what the app needs)
-GRANT INSERT ON public.submissions TO anon, authenticated;
+GRANT INSERT, SELECT ON public.submissions TO anon, authenticated;
 GRANT SELECT ON public.admin_users TO authenticated;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 
