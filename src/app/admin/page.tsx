@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,6 +26,7 @@ type Submission = {
 };
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [email, setEmail] = useState("");
@@ -99,20 +101,41 @@ export default function AdminDashboard() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoggingIn) return;
+
     setIsLoggingIn(true);
     setLoginError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        console.error("Login Error Object:", error);
+        throw error;
+      }
+
+      // Success Debug Log
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("Login Success: Session identified as", sessionData.session ? "Active" : "Null");
+
     } catch (err: any) {
       setLoginError(err.message || "Login failed");
+    } finally {
       setIsLoggingIn(false);
     }
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    setIsLoading(true);
+    try {
+      await supabase.auth.signOut();
+      router.replace('/admin'); // Redirect back to login state
+      router.refresh();
+    } catch (err) {
+      console.error("Logout Error:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchData = async () => {

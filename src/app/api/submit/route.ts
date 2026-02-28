@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
 import { isValidEthereumAddress, isValidTwitterUrl, isValidTwitterHandle, normalizeEthereumAddress } from '@/lib/utils';
 import { headers } from 'next/headers';
 
@@ -43,7 +43,8 @@ export async function POST(req: Request) {
     // Simple hash for the IP to avoid storing raw data
     const ipHash = ip === 'unknown' ? 'unknown' : Buffer.from(ip).toString('base64').slice(0, 16);
 
-    // 4. Insert submission using anon client
+    // 4. Insert submission using server client
+    const supabase = await createClient();
     const { error: insertError } = await supabase
       .from('submissions')
       .insert([{
