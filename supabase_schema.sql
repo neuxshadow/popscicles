@@ -97,10 +97,46 @@ FOR SELECT
 TO authenticated
 USING (id = auth.uid());
 
+-- Helper function to check admin status (SECURITY DEFINER to bypass RLS)
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.admin_users WHERE id = auth.uid()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- Re-apply policies using helper
+DROP POLICY IF EXISTS "submissions_admin_select" ON public.submissions;
+CREATE POLICY "submissions_admin_select"
+ON public.submissions
+FOR SELECT
+TO authenticated
+USING (is_admin());
+
+DROP POLICY IF EXISTS "submissions_admin_update" ON public.submissions;
+CREATE POLICY "submissions_admin_update"
+ON public.submissions
+FOR UPDATE
+TO authenticated
+USING (is_admin())
+WITH CHECK (is_admin());
+
+DROP POLICY IF EXISTS "submissions_admin_delete" ON public.submissions;
+CREATE POLICY "submissions_admin_delete"
+ON public.submissions
+FOR DELETE
+TO authenticated
+USING (is_admin());
+
 -- 8) MINIMAL GRANTS (only what the app needs)
-GRANT INSERT, SELECT ON public.submissions TO anon, authenticated;
+GRANT INSERT ON public.submissions TO anon, authenticated;
+GRANT SELECT, UPDATE, DELETE ON public.submissions TO authenticated;
+REVOKE SELECT ON public.submissions FROM anon;
 GRANT SELECT ON public.admin_users TO authenticated;
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 
 -- 9) Maintain updated_at trigger (idempotent)
 CREATE OR REPLACE FUNCTION public.handle_updated_at()
