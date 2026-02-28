@@ -107,18 +107,30 @@ export default function AdminDashboard() {
     setLoginError(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      
-      if (error) {
-        console.error("Login Error Object:", error);
-        throw error;
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Login failed");
       }
 
-      // Success Debug Log
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log("Login Success: Session identified as", sessionData.session ? "Active" : "Null");
+      console.log("Server Login Success:", result.user?.email);
+      
+      // Refresh the page to ensure server components and middleware see the new session cookies
+      router.refresh();
+      
+      // We don't necessarily need to call toggle states manually as router.refresh 
+      // and the useEffect checkUser/onAuthStateChange will handle it.
+      // But let's trigger a check.
+      await checkUser();
 
     } catch (err: any) {
+      console.error("Login Error:", err);
       setLoginError(err.message || "Login failed");
     } finally {
       setIsLoggingIn(false);
