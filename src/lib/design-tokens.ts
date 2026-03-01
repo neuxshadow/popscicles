@@ -1,5 +1,5 @@
 /**
- * Popscicles Product Design Tokens
+ * Popsicles Product Design Tokens
  * Focus: Premium, minimal frozen aesthetic with icy blue accents.
  */
 

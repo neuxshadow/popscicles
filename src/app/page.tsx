@@ -90,7 +90,7 @@ export default function LandingPage() {
       <footer className="border-t border-[#262626] py-16 mt-32">
         <div className="page-container flex flex-col md:flex-row justify-between items-center gap-12">
           <div className="flex flex-col items-center md:items-start space-y-4">
-            <span className="font-black text-lg tracking-tighter">POPSCICLES</span>
+            <span className="font-black text-lg tracking-tighter">POPSICLES</span>
             <div className="text-xs font-bold text-neutral-600 uppercase tracking-widest">
               &copy; 2026 Studio. All rights reserved.
             </div>

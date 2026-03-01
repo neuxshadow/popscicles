@@ -126,8 +126,8 @@ export default function QuestsPage() {
           <QuestItem 
             number="02" 
             title="Interaction" 
-            description="Like and Retweet our pinned whitelist post." 
-            link="https://x.com/PopsiclesEth/status/2027408948979007662" 
+            description="Like,Retweet & Tag 2 Friends." 
+            link="https://x.com/PopsiclesEth/status/2027786900925223417?s=20" 
             storageKey="interaction"
             userId={userId}
           />

@@ -15,7 +15,7 @@ export function Navigation() {
         {/* Left: Logo */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center gap-2.5 font-bold text-xl tracking-tighter hover:opacity-80 transition-opacity whitespace-nowrap">
-            <span>POPSCICLES</span>
+            <span>POPSICLES</span>
           </Link>
         </div>
 

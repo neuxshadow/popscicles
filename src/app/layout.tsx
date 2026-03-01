@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Popscicles",
-  description: "Complete quests and secure your spot for the Popscicles collection.",
+  title: "Popsicles",
+  description: "Complete quests and secure your spot for the Popsicles collection.",
 };
 
 export default function RootLayout({
