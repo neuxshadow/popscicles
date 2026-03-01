@@ -17,8 +17,8 @@ export default function LandingPage() {
             <HeroScrollFrames />
             
             {/* Dark readability overlay between animation and content */}
-            <div className="absolute inset-0 bg-[#0a0a0a]/45 pointer-events-none z-[5]" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/60 via-transparent to-[#0a0a0a]/80 pointer-events-none z-[5]" />
+            <div className="absolute inset-0 bg-[#0a0a0a]/30 pointer-events-none z-[5]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/40 via-transparent to-[#0a0a0a]/65 pointer-events-none z-[5]" />
             
             {/* Hero Content */}
             <div className="page-container relative z-10 text-center">
@@ -35,11 +35,11 @@ export default function LandingPage() {
                   className="space-y-10"
                 >
                   <h1 className="display-title">
-                    Engineered Access <br />
+                    POPSICLES COLD RELEASE <br />
                     <span className="text-icy-gradient">Absolute Zero</span>
                   </h1>
                   <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium tracking-tight">
-                    An intentionally small-batch collective defined by structural purity and manual intake. Every inclusion is verified for systemic alignment.
+                     A limited Ethereum collection of 3,333. Curated release, built to stay rare.
                   </p>
                 </motion.div>
 

@@ -148,8 +148,8 @@ export function HeroScrollFrames() {
       <div 
         className="sticky top-0 h-screen w-full flex items-center justify-center transition-all duration-300"
         style={{ 
-          opacity: 0.4 + currentProgress.current * 0.4,
-          filter: `brightness(${0.8 + currentProgress.current * 0.4}) saturate(${0.9 + currentProgress.current * 0.2})` 
+          opacity: 0.6 + currentProgress.current * 0.2,
+          filter: `brightness(${0.85 + currentProgress.current * 0.35}) saturate(${0.9 + currentProgress.current * 0.2})` 
         }}
       >
         {manifest.length > 0 && (

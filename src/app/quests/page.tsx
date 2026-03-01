@@ -20,10 +20,25 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+import { supabase } from "@/lib/supabase";
+
 export default function QuestsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [userId, setUserId] = useState<string>("guest");
+
+  useEffect(() => {
+    const getSession = async () => {
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUserId(session.user.id);
+        }
+      }
+    };
+    getSession();
+  }, []);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -105,12 +120,16 @@ export default function QuestsPage() {
             title="Follow on X" 
             description="Keep up with our latest announcements and updates." 
             link="https://x.com/PopsiclesEth"
+            storageKey="follow_x"
+            userId={userId}
           />
           <QuestItem 
             number="02" 
             title="Interaction" 
             description="Like and Retweet our pinned whitelist post." 
             link="https://x.com/PopsiclesEth/status/2027408948979007662" 
+            storageKey="interaction"
+            userId={userId}
           />
         </div>
 
@@ -201,11 +220,55 @@ export default function QuestsPage() {
   );
 }
 
-function QuestItem({ number, title, description, link }: { number: string, title: string, description: string, link: string }) {
+import { useEffect } from "react";
+
+function QuestItem({ number, title, description, link, storageKey, userId }: { number: string, title: string, description: string, link: string, storageKey: string, userId: string }) {
+  const [status, setStatus] = useState<'idle' | 'verifying' | 'done'>('idle');
+
+  useEffect(() => {
+    const key = `quests_done_${userId}_${storageKey}`;
+    const saved = localStorage.getItem(key);
+    if (saved === 'true') {
+      setStatus('done');
+    } else {
+      setStatus('idle');
+    }
+  }, [storageKey, userId]);
+
+  const handleAction = () => {
+    if (status !== 'idle') return;
+    
+    // Open link
+    window.open(link, '_blank', 'noopener,noreferrer');
+    
+    // Start verification
+    setStatus('verifying');
+    
+    // Random delay 1200-2500ms
+    const delay = Math.floor(Math.random() * (2500 - 1200 + 1)) + 1200;
+    
+    setTimeout(() => {
+      const key = `quests_done_${userId}_${storageKey}`;
+      localStorage.setItem(key, 'true');
+      setStatus('done');
+    }, delay);
+  };
+
+  const isDone = status === 'done';
+  const isVerifying = status === 'verifying';
+
   return (
-    <div className="product-card p-6 flex items-center justify-between group hover:border-sky-400/20 transition-all bg-[#0d0d0d]/40 backdrop-blur-md">
+    <div className={cn(
+      "product-card p-6 flex items-center justify-between group transition-all bg-[#0d0d0d]/40 backdrop-blur-md",
+      isDone ? "border-emerald-500/30 bg-emerald-500/[0.02]" : "hover:border-sky-400/20",
+      isVerifying && "border-sky-500/20 bg-sky-500/[0.01]"
+    )}>
       <div className="flex items-center space-x-6">
-        <div className="text-2xl font-black text-slate-900 group-hover:text-sky-400 transition-colors duration-500 tracking-tighter">
+        <div className={cn(
+          "text-2xl font-black transition-colors duration-500 tracking-tighter",
+          isDone ? "text-emerald-500" : "text-slate-900 group-hover:text-sky-400",
+          isVerifying && "text-sky-400/50"
+        )}>
           {number}
         </div>
         <div className="space-y-1">
@@ -213,14 +276,32 @@ function QuestItem({ number, title, description, link }: { number: string, title
           <p className="text-sm text-slate-500 font-medium">{description}</p>
         </div>
       </div>
-      <a 
-        href={link} 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="btn-secondary px-4 py-2 text-[10px] uppercase font-black tracking-widest border border-slate-900"
+      <button 
+        onClick={handleAction}
+        disabled={isVerifying || isDone}
+        className={cn(
+          "px-4 py-2 text-[10px] uppercase font-black tracking-widest border transition-all flex items-center space-x-2 min-w-[100px] justify-center",
+          isDone 
+            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 cursor-default" 
+            : isVerifying
+              ? "bg-sky-500/5 border-sky-500/20 text-sky-400/70 cursor-wait"
+              : "btn-secondary border-slate-900"
+        )}
       >
-        Action
-      </a>
+        {isDone ? (
+          <>
+            <CheckCircle2 className="h-3 w-3" />
+            <span>Done</span>
+          </>
+        ) : isVerifying ? (
+          <>
+            <Loader2 className="h-3 w-3 animate-spin" />
+            <span>Verifying...</span>
+          </>
+        ) : (
+          <span>Action</span>
+        )}
+      </button>
     </div>
   );
 }
