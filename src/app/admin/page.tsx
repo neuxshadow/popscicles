@@ -9,7 +9,7 @@ import {
   ExternalLink, Download, LogOut, ChevronLeft, 
   ChevronRight, Filter, MoreHorizontal, MessageSquare,
   ShieldCheck, Loader2, AlertCircle, Mail, Lock,
-  ChevronDown, Trash2
+  ChevronDown, Trash2, Copy, Eye, EyeOff
 } from "lucide-react";
 import { cn, formatAddress } from "@/lib/utils";
 import { format } from "date-fns";
@@ -24,6 +24,56 @@ type Submission = {
   admin_note: string | null;
   created_at: string;
 };
+
+function WalletCell({ address }: { address: string }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="flex items-center space-x-3 group/wallet">
+      <div className={cn(
+        "font-mono text-[11px] transition-all duration-200",
+        isExpanded ? "text-blue-400" : "text-neutral-500"
+      )}>
+        {isExpanded ? address : formatAddress(address)}
+      </div>
+      
+      <div className="flex items-center space-x-1 opacity-0 group-hover/wallet:opacity-100 transition-opacity">
+        <button 
+          onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+          className="p-1.5 rounded-lg hover:bg-white/5 text-neutral-500 hover:text-white transition-all"
+          title={isExpanded ? "Hide" : "Reveal full address"}
+        >
+          {isExpanded ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+        </button>
+        
+        <button 
+          onClick={handleCopy}
+          className="p-1.5 rounded-lg hover:bg-white/5 text-neutral-500 hover:text-white transition-all relative"
+          title="Copy to clipboard"
+        >
+          {copied ? (
+            <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+          {copied && (
+            <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded shadow-lg whitespace-nowrap">
+              Copied
+            </span>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -427,9 +477,7 @@ export default function AdminDashboard() {
                         <td className="px-8 py-6">
                           <div className="space-y-1">
                             <div className="font-bold text-white text-sm">{sub.twitter_username}</div>
-                            <div className="text-[11px] font-mono text-neutral-500 flex items-center space-x-1.5 grayscale hover:grayscale-0 transition-all cursor-copy">
-                               {formatAddress(sub.wallet_address)}
-                            </div>
+                            <WalletCell address={sub.wallet_address} />
                           </div>
                         </td>
                         <td className="px-8 py-6">
