@@ -25,15 +25,33 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
     }
 
-    const { data, error } = await supabase
-      .from('submissions')
-      .select('wallet_address, twitter_username, created_at')
-      .eq('status', 'rejected')
-      .order('created_at', { ascending: false });
+    let allData: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
 
-    if (error) throw error;
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from('submissions')
+        .select('wallet_address, twitter_username, created_at')
+        .eq('status', 'rejected')
+        .order('created_at', { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
 
-    if (!data || data.length === 0) {
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        hasMore = false;
+      } else {
+        allData = [...allData, ...data];
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      }
+    }
+
+    if (allData.length === 0) {
       return new Response("No rejected wallets found", { status: 404 });
     }
 
@@ -41,7 +59,7 @@ export async function GET(req: Request) {
     const headers = ["Wallet", "Twitter", "Date"].map(csvEscape);
     
     // Rows
-    const rows = data.map(row => [
+    const rows = allData.map(row => [
       csvEscape(row.wallet_address),
       csvEscape(row.twitter_username),
       csvEscape(new Date(row.created_at).toISOString())
