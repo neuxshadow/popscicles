@@ -91,6 +91,8 @@ export default function AdminDashboard() {
   const [totalPages, setTotalPages] = useState(1);
   const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isExportingRejected, setIsExportingRejected] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [noteInput, setNoteInput] = useState("");
 
@@ -258,6 +260,8 @@ export default function AdminDashboard() {
   };
 
   const exportCSV = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
     try {
       const response = await fetch('/api/admin/export');
       if (response.status === 404) {
@@ -277,6 +281,35 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error(err);
       alert("Failed to export CSV.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const exportRejectedCSV = async () => {
+    if (isExportingRejected) return;
+    setIsExportingRejected(true);
+    try {
+      const response = await fetch('/api/admin/export-rejected');
+      if (response.status === 404) {
+        alert("No rejected submissions to export.");
+        return;
+      }
+      if (!response.ok) throw new Error("Export failed");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `rejected-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export rejected CSV.");
+    } finally {
+      setIsExportingRejected(false);
     }
   };
 
@@ -396,13 +429,33 @@ export default function AdminDashboard() {
           </div>
           
           <div className="flex items-center space-x-4">
-            <button
-              onClick={exportCSV}
-              className="btn-secondary hidden sm:flex items-center space-x-2 px-6 py-2.5 text-[10px] uppercase font-black tracking-widest border border-white/5"
-            >
-              <Download className="h-3.5 w-3.5 text-blue-500" />
-              <span>Export</span>
-            </button>
+            <div className="hidden sm:flex items-center space-x-3">
+              <button
+                onClick={exportCSV}
+                disabled={isExporting}
+                className="btn-secondary flex items-center space-x-2 px-6 py-2.5 text-[10px] uppercase font-black tracking-widest border border-white/5"
+              >
+                {isExporting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />
+                ) : (
+                  <Download className="h-3.5 w-3.5 text-blue-500" />
+                )}
+                <span>Export</span>
+              </button>
+
+              <button
+                onClick={exportRejectedCSV}
+                disabled={isExportingRejected}
+                className="btn-secondary flex items-center space-x-2 px-6 py-2.5 text-[10px] uppercase font-black tracking-widest border border-white/5"
+              >
+                {isExportingRejected ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-red-500" />
+                ) : (
+                  <Download className="h-3.5 w-3.5 text-red-500" />
+                )}
+                <span>Export Rejected</span>
+              </button>
+            </div>
             <div className="h-8 w-[1px] bg-white/5 mx-2" />
             <button
               onClick={handleLogout}
