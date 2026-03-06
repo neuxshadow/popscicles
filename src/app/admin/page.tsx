@@ -93,6 +93,7 @@ export default function AdminDashboard() {
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingRejected, setIsExportingRejected] = useState(false);
+  const [isExportingPending, setIsExportingPending] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [noteInput, setNoteInput] = useState("");
 
@@ -259,57 +260,47 @@ export default function AdminDashboard() {
     }
   };
 
-  const exportCSV = async () => {
-    if (isExporting) return;
-    setIsExporting(true);
+  const handleExport = async (status: 'approved' | 'rejected' | 'pending') => {
+    const setLoading = status === 'approved' ? setIsExporting : 
+                      status === 'rejected' ? setIsExportingRejected : 
+                      setIsExportingPending;
+    const isLoading = status === 'approved' ? isExporting : 
+                     status === 'rejected' ? isExportingRejected : 
+                     isExportingPending;
+
+    if (isLoading) return;
+    setLoading(true);
+
     try {
-      const response = await fetch('/api/admin/export');
+      const response = await fetch(`/api/admin/export?status=${status}`);
       if (response.status === 404) {
-        alert("No approved wallets to export.");
+        const labels = { approved: 'approved wallets', rejected: 'rejected submissions', pending: 'in-queue submissions' };
+        alert(`No ${labels[status]} to export.`);
         return;
       }
       if (!response.ok) throw new Error("Export failed");
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.body.appendChild(document.createElement('a'));
       link.href = url;
-      link.setAttribute('download', `approved_wallets_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
+      
+      const dateStr = new Date().toISOString().split('T')[0];
+      const filenameMap = {
+        approved: `approved_wallets_${dateStr}.csv`,
+        rejected: `rejected-${dateStr}.csv`,
+        pending: `in-queue-${dateStr}.csv`
+      };
+      
+      link.setAttribute('download', filenameMap[status]);
       link.click();
       link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      alert("Failed to export CSV.");
+      alert(`Failed to export ${status} CSV.`);
     } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const exportRejectedCSV = async () => {
-    if (isExportingRejected) return;
-    setIsExportingRejected(true);
-    try {
-      const response = await fetch('/api/admin/export-rejected');
-      if (response.status === 404) {
-        alert("No rejected submissions to export.");
-        return;
-      }
-      if (!response.ok) throw new Error("Export failed");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `rejected-${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to export rejected CSV.");
-    } finally {
-      setIsExportingRejected(false);
+      setLoading(false);
     }
   };
 
@@ -431,7 +422,7 @@ export default function AdminDashboard() {
           <div className="flex items-center space-x-4">
             <div className="hidden sm:flex items-center space-x-3">
               <button
-                onClick={exportCSV}
+                onClick={() => handleExport('approved')}
                 disabled={isExporting}
                 className="btn-secondary flex items-center space-x-2 px-6 py-2.5 text-[10px] uppercase font-black tracking-widest border border-white/5"
               >
@@ -440,11 +431,24 @@ export default function AdminDashboard() {
                 ) : (
                   <Download className="h-3.5 w-3.5 text-blue-500" />
                 )}
-                <span>Export</span>
+                <span>Export Approved</span>
               </button>
 
               <button
-                onClick={exportRejectedCSV}
+                onClick={() => handleExport('pending')}
+                disabled={isExportingPending}
+                className="btn-secondary flex items-center space-x-2 px-6 py-2.5 text-[10px] uppercase font-black tracking-widest border border-white/5"
+              >
+                {isExportingPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
+                ) : (
+                  <Download className="h-3.5 w-3.5 text-amber-500" />
+                )}
+                <span>Export In Queue</span>
+              </button>
+
+              <button
+                onClick={() => handleExport('rejected')}
                 disabled={isExportingRejected}
                 className="btn-secondary flex items-center space-x-2 px-6 py-2.5 text-[10px] uppercase font-black tracking-widest border border-white/5"
               >

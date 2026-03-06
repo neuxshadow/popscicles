@@ -6,6 +6,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get('status') || 'approved';
+    const validStatuses = ['approved', 'rejected', 'pending'];
+
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    }
+
     const supabase = await createClient();
     const { data: authData, error: authError } = await supabase.auth.getUser();
 
@@ -34,7 +42,7 @@ export async function GET(req: Request) {
       const { data, error } = await supabase
         .from('submissions')
         .select('wallet_address, twitter_username, created_at')
-        .eq('status', 'approved')
+        .eq('status', status)
         .order('created_at', { ascending: false })
         .range(page * pageSize, (page + 1) * pageSize - 1);
 
@@ -52,7 +60,7 @@ export async function GET(req: Request) {
     }
 
     if (allData.length === 0) {
-      return new Response("No approved wallets found", { status: 404 });
+      return new Response(`No ${status} wallets found`, { status: 404 });
     }
 
     // Headers
@@ -71,10 +79,18 @@ export async function GET(req: Request) {
       ...rows.map(row => row.join(","))
     ].join("\n");
 
+    const dateStr = new Date().toISOString().split('T')[0];
+    const filenameMap: Record<string, string> = {
+      approved: `approved_wallets_${dateStr}.csv`,
+      rejected: `rejected-${dateStr}.csv`,
+      pending: `in-queue-${dateStr}.csv`
+    };
+    const filename = filenameMap[status] || `export-${status}-${dateStr}.csv`;
+
     return new Response(csvContent, {
       headers: {
         'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="approved_wallets_${new Date().toISOString().split('T')[0]}.csv"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
         'Cache-Control': 'no-store, max-age=0'
       }
     });
