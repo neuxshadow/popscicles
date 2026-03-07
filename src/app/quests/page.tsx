@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Twitter, Wallet, Link as LinkIcon, Loader2, CheckCircle2, AlertCircle, ChevronRight, ArrowLeft } from "lucide-react";
+import { Twitter, Wallet, Link as LinkIcon, Loader2, CheckCircle2, AlertCircle, ChevronRight, ArrowLeft, Lock } from "lucide-react";
 import { cn, isValidEthereumAddress, isValidTwitterUrl, normalizeEthereumAddress } from "@/lib/utils";
 import { Navigation } from "@/components/Navigation";
 import Link from "next/link";
@@ -133,86 +133,19 @@ export default function QuestsPage() {
           />
         </div>
 
-        {/* Form Container */}
+        {/* Closed State Message */}
         <div className="page-container max-w-2xl">
-          <div className="product-card p-8 md:p-12 space-y-10 bg-[#0d0d0d]/40 backdrop-blur-md">
-            <div className="space-y-1">
-              <h3 className="text-xl font-bold tracking-tight">Submission Details</h3>
-              <p className="text-sm text-slate-500 font-medium">Double-check your handle and address before sending.</p>
+          <div className="product-card p-12 text-center space-y-6 bg-[#0d0d0d]/40 backdrop-blur-md border-white/5">
+            <div className="mx-auto h-16 w-16 rounded-2xl bg-white/5 flex items-center justify-center text-neutral-500 mb-2">
+              <Lock className="h-8 w-8" />
             </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 flex items-center space-x-2">
-                  <Twitter className="h-3 w-3" />
-                  <span>X Username</span>
-                </label>
-                <input
-                  {...register("twitter_username")}
-                  placeholder="@username"
-                  className={cn("product-input", errors.twitter_username && "border-red-500/50 focus:border-red-500")}
-                />
-                {errors.twitter_username && (
-                  <p className="text-red-500 text-[11px] font-bold">{errors.twitter_username.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 flex items-center space-x-2">
-                  <Wallet className="h-3 w-3" />
-                  <span>Ethereum Wallet</span>
-                </label>
-                <input
-                  {...register("wallet_address")}
-                  placeholder="0x..."
-                  className={cn("product-input", errors.wallet_address && "border-red-500/50 focus:border-red-500 font-mono")}
-                />
-                {errors.wallet_address && (
-                  <p className="text-red-500 text-[11px] font-bold">{errors.wallet_address.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 flex items-center space-x-2">
-                  <LinkIcon className="h-3 w-3" />
-                  <span>Proof of Task</span>
-                </label>
-                <input
-                  {...register("tweet_url")}
-                  placeholder="https://x.com/..."
-                  className={cn("product-input", errors.tweet_url && "border-red-500/50 focus:border-red-500")}
-                />
-                {errors.tweet_url && (
-                  <p className="text-red-500 text-[11px] font-bold">{errors.tweet_url.message}</p>
-                )}
-              </div>
-
-              {error && (
-                <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-lg flex items-start space-x-3 text-red-500 text-xs font-bold uppercase tracking-tight">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="btn-primary w-full py-4 text-base"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Submit Application"
-                )}
-              </button>
-            </form>
-            
-            <p className="text-[10px] text-center text-slate-600 uppercase font-black tracking-widest leading-loose">
-              Maximum one submission per individual. <br /> Automated bot detection is active.
-            </p>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight uppercase">WL applications are closed</h2>
+              <p className="text-neutral-500 font-medium text-sm">
+                The intake phase has concluded as we approach the minting event. <br />
+                Stay tuned to our official channels for further updates.
+              </p>
+            </div>
           </div>
         </div>
       </main>
@@ -236,22 +169,8 @@ function QuestItem({ number, title, description, link, storageKey, userId }: { n
   }, [storageKey, userId]);
 
   const handleAction = () => {
-    if (status !== 'idle') return;
-    
-    // Open link
-    window.open(link, '_blank', 'noopener,noreferrer');
-    
-    // Start verification
-    setStatus('verifying');
-    
-    // Random delay 1200-2500ms
-    const delay = Math.floor(Math.random() * (2500 - 1200 + 1)) + 1200;
-    
-    setTimeout(() => {
-      const key = `quests_done_${userId}_${storageKey}`;
-      localStorage.setItem(key, 'true');
-      setStatus('done');
-    }, delay);
+    // WL is closed, actions are disabled
+    return;
   };
 
   const isDone = status === 'done';
@@ -293,13 +212,8 @@ function QuestItem({ number, title, description, link, storageKey, userId }: { n
             <CheckCircle2 className="h-3 w-3" />
             <span>Done</span>
           </>
-        ) : isVerifying ? (
-          <>
-            <Loader2 className="h-3 w-3 animate-spin" />
-            <span>Verifying...</span>
-          </>
         ) : (
-          <span>Action</span>
+          <span>Inactive</span>
         )}
       </button>
     </div>
